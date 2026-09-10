@@ -50,12 +50,18 @@ const MyCourses = () => {
       setViewMode('courses');
     } catch (error) {
       console.error('Failed to load courses:', error);
+      setCourses([]);
+      setViewMode('courses');
     } finally {
       setLoading(false);
     }
   };
 
   const loadCourseSections = async (courseId) => {
+    if (!courseId) {
+      console.error('loadCourseSections called with no courseId');
+      return;
+    }
     setLoading(true);
     try {
       const data = await purchasedAPI.getCourseSections(courseId);
@@ -63,6 +69,7 @@ const MyCourses = () => {
       setViewMode('sections');
     } catch (error) {
       console.error('Failed to load sections:', error);
+      setSections([]);
     } finally {
       setLoading(false);
     }
@@ -71,18 +78,28 @@ const MyCourses = () => {
   const handleSelectPackage = (pkg) => {
     setSelectedPackage(pkg);
     setViewHistory(prev => [...prev, { mode: 'packages', data: pkg }]);
-    if (pkg.is_unassigned) {
-      setCourses(pkg.courses || []);
-      setViewMode('courses');
-    } else {
-      loadPackageCourses(pkg.package_id);
-    }
+    // ALWAYS fetch fresh via the dedicated endpoint.
+    // The `courses` array embedded in /api/packages is a lightweight hint
+    // (only used for course_count); the real course objects come from
+    // /api/packages/{id}/courses.
+    loadPackageCourses(pkg.is_unassigned ? 'unassigned' : pkg.package_id);
   };
 
   const handleSelectCourse = (course) => {
-    setSelectedCourse(course);
-    setViewHistory(prev => [...prev, { mode: 'courses', data: course }]);
-    loadCourseSections(course.course_id);
+    // Normalize course_id (accept either shape)
+    const cid = course.course_id ?? course.item_id;
+    if (!cid) {
+      console.error('Cannot open course — no id found:', course);
+      return;
+    }
+    const normalized = {
+      ...course,
+      course_id: cid,
+      course_name: course.course_name ?? course.name ?? 'Unnamed Course',
+    };
+    setSelectedCourse(normalized);
+    setViewHistory(prev => [...prev, { mode: 'courses', data: normalized }]);
+    loadCourseSections(cid);
   };
 
   const handleSelectSection = (section) => {
@@ -94,9 +111,11 @@ const MyCourses = () => {
       });
       setViewMode('watch');
     } else if (section.subsections && section.subsections.length > 0) {
-      // For sections with subsections, we need to handle this differently
-      // For now, let's show a dialog or navigate to a subsection view
-      alert('This section has subsections. Click on a subsection to view videos.');
+      // For sections with subsections, load the first subsection's videos
+      const firstSub = section.subsections[0];
+      if (firstSub) {
+        handleSelectSubsection(firstSub.subsection_id, firstSub.subsection_name);
+      }
     } else {
       alert('This section has no videos available.');
     }
@@ -148,7 +167,7 @@ const MyCourses = () => {
   const handleCloseWatch = () => {
     setViewMode('sections');
     setWatchData(null);
-    if (selectedCourse) {
+    if (selectedCourse && selectedCourse.course_id) {
       loadCourseSections(selectedCourse.course_id);
     }
   };
@@ -259,29 +278,53 @@ const MyCourses = () => {
         </div>
 
         <div className="grid-view">
-          {courses.map((course) => (
-            <button 
-              key={course.course_id} 
-              className="tile"
-              onClick={() => handleSelectCourse(course)}
-            >
-              <div className="tile-top">
-                <span className="tile-icon">
-                  <i className="fas fa-graduation-cap"></i>
-                </span>
-              </div>
-              <div className="tile-name">{course.course_name || 'Unnamed Course'}</div>
-              <div className="tile-meta">
-                <span className="chip">📖 {course.lessons || 0} lessons</span>
-                <span className="chip">📚 {course.sections_count || 0} sections</span>
-              </div>
-              <div className="tile-foot">
-                <span className="tile-cta">
-                  Start Learning <i className="fas fa-chevron-right"></i>
-                </span>
-              </div>
-            </button>
-          ))}
+          {courses.map((course, idx) => {
+            // Normalize — server may return either shape:
+            //   { course_id, course_name, lessons, sections_count }  (from /courses endpoint)
+            //   { item_id, name, item_type, price, duration }         (embedded in /packages)
+            const cid = course.course_id ?? course.item_id ?? `course-${idx}`;
+            const cname = course.course_name ?? course.name ?? 'Unnamed Course';
+            const lessons = course.lessons ?? 0;
+            const sectionsCount = course.sections_count ?? 0;
+
+            return (
+              <button 
+                key={cid} 
+                className="tile"
+                onClick={() => handleSelectCourse({
+                  ...course,
+                  course_id: cid,
+                  course_name: cname,
+                })}
+              >
+                <div className="tile-top">
+                  <span className="tile-icon">
+                    <i className="fas fa-graduation-cap"></i>
+                  </span>
+                </div>
+                <div className="tile-name">{cname}</div>
+                <div className="tile-meta">
+                  <span className="chip">📖 {lessons} lessons</span>
+                  <span className="chip">📚 {sectionsCount} sections</span>
+                </div>
+                <div className="tile-foot">
+                  <span className="tile-cta">
+                    Start Learning <i className="fas fa-chevron-right"></i>
+                  </span>
+                </div>
+              </button>
+            );
+          })}
+
+          {courses.length === 0 && (
+            <div className="empty" style={{ gridColumn: '1 / -1' }}>
+              <span className="empty-icon">
+                <i className="fas fa-graduation-cap" style={{ fontSize: '22px' }}></i>
+              </span>
+              <h3>No courses available</h3>
+              <p>This package doesn't have any courses yet.</p>
+            </div>
+          )}
         </div>
       </>
     );
