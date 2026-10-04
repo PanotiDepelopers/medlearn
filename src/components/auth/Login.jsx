@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { getLandingRoute } from '../../utils/authHelpers';
 
 const Login = () => {
   const [username, setUsername] = useState('');
@@ -22,20 +23,32 @@ const Login = () => {
 
     try {
       console.log('📤 Submitting login form...');
-      await login(username, password);
-      console.log('✅ Login successful!');
+      const result = await login(username, password);
+      console.log('✅ Login successful!', result);
       
-      // Force a fresh auth check
-      console.log('🔄 Re-checking auth...');
+      // Wait for state to update
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // Re-check auth to get fresh user data
       await checkAuth();
       
-      // Navigate to home
-      console.log('🚀 Navigating to home...');
-      navigate('/');
-      // Force reload to ensure app state is fresh
-      window.location.href = '/';
+      // Get the user from the login response (has purchases)
+      const loggedInUser = {
+        studentId: result.studentId,
+        username: result.username,
+        hasSubscription: result.hasSubscription,
+        subscription: result.subscription,
+        purchases: result.purchases || []
+      };
+      
+      // Decide where to send them
+      const landingRoute = getLandingRoute(loggedInUser);
+      console.log('🚀 Redirecting to:', landingRoute);
+      
+      // Force navigation
+      window.location.href = landingRoute;
     } catch (err) {
-      console.error('❌ Login error in form:', err);
+      console.error('❌ Login error:', err);
       setError(err.message || 'Invalid username or password.');
       setLoading(false);
     }
