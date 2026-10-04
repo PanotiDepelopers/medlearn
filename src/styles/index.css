@@ -1913,3 +1913,75 @@ body {
     display: flex !important;
   }
 }
+
+/* ===== Catalog Search Bar ===== */
+.catalog-search {
+  position: relative;
+  width: 100%;
+  max-width: 520px;
+  margin-bottom: 1rem;
+}
+
+.catalog-search-icon {
+  position: absolute;
+  left: 18px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--ink-faint);
+  font-size: 15px;
+  pointer-events: none;
+}
+
+.catalog-search-input {
+  width: 100%;
+  padding: 14px 46px 14px 46px;
+  border: 1.5px solid var(--line);
+  border-radius: 50px;
+  background: var(--paper);
+  color: var(--ink);
+  font-size: 15px;
+  font-family: inherit;
+  transition: all 0.15s ease;
+  outline: none;
+}
+
+.catalog-search-input::placeholder {
+  color: var(--ink-faint);
+}
+
+.catalog-search-input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 4px var(--accent-soft);
+  background: var(--paper);
+}
+
+.catalog-search-clear {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 50%;
+  background: var(--bg);
+  color: var(--ink-soft);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 12px;
+  transition: all 0.15s ease;
+}
+
+.catalog-search-clear:hover {
+  background: var(--line);
+  color: var(--ink);
+}
+
+.catalog-search-count {
+  font-size: 0.85rem;
+  color: var(--ink-soft);
+  margin-bottom: 1rem;
+  font-weight: 500;
+}
