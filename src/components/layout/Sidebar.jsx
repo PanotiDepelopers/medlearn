@@ -100,7 +100,7 @@ const Sidebar = () => {
 
         <nav className="sidebar-nav">
           <NavLink 
-            to="/" 
+            to="/buy-courses" 
             className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
             onClick={handleNavClick}
           >

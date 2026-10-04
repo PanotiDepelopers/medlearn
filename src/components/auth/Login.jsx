@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { getLandingRoute } from '../../utils/authHelpers';
@@ -8,8 +8,15 @@ const Login = () => {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const { login, checkAuth } = useAuth();
+  const { login, checkAuth, user, isAuthenticated } = useAuth();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      const landingRoute = getLandingRoute(user);
+      navigate(landingRoute, { replace: true });
+    }
+  }, [isAuthenticated, user, navigate]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -22,17 +29,11 @@ const Login = () => {
     setError('');
 
     try {
-      console.log('📤 Submitting login form...');
       const result = await login(username, password);
-      console.log('✅ Login successful!', result);
-      
-      // Wait for state to update
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      // Re-check auth to get fresh user data
+
+      await new Promise(resolve => setTimeout(resolve, 300));
       await checkAuth();
-      
-      // Get the user from the login response (has purchases)
+
       const loggedInUser = {
         studentId: result.studentId,
         username: result.username,
@@ -40,15 +41,10 @@ const Login = () => {
         subscription: result.subscription,
         purchases: result.purchases || []
       };
-      
-      // Decide where to send them
+
       const landingRoute = getLandingRoute(loggedInUser);
-      console.log('🚀 Redirecting to:', landingRoute);
-      
-      // Force navigation
       window.location.href = landingRoute;
     } catch (err) {
-      console.error('❌ Login error:', err);
       setError(err.message || 'Invalid username or password.');
       setLoading(false);
     }

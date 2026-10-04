@@ -12,20 +12,16 @@ import PrivateRoute from './components/common/PrivateRoute';
 import { getLandingRoute } from './utils/authHelpers';
 import Spinner from './components/common/Spinner';
 
-/**
- * SmartHomeRedirect: 
- * When user hits "/", redirect to /my-courses if they have purchases
- */
 const SmartHomeRedirect = () => {
   const { user, loading } = useAuth();
 
   if (loading) {
     return (
-      <div style={{ 
-        display: 'flex', 
-        justifyContent: 'center', 
-        alignItems: 'center', 
-        height: '100vh' 
+      <div style={{
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        height: '100vh'
       }}>
         <Spinner size="large" />
       </div>
@@ -33,21 +29,14 @@ const SmartHomeRedirect = () => {
   }
 
   const landingRoute = getLandingRoute(user);
-  
-  // If landing is /my-courses, redirect there
-  if (landingRoute === '/my-courses') {
-    return <Navigate to="/my-courses" replace />;
-  }
-  
-  // Otherwise show the catalog
-  return <CatalogGrid />;
+  return <Navigate to={landingRoute} replace />;
 };
 
 const App = () => {
   return (
     <AuthProvider>
       <CartProvider>
-        <Toaster 
+        <Toaster
           position="top-right"
           toastOptions={{
             duration: 4000,
@@ -63,8 +52,8 @@ const App = () => {
           <Route path="/login" element={<Login />} />
           <Route element={<PrivateRoute />}>
             <Route path="/" element={<MainLayout />}>
-              {/* Smart redirect for homepage */}
               <Route index element={<SmartHomeRedirect />} />
+              <Route path="buy-courses" element={<CatalogGrid />} />
               <Route path="my-courses" element={<MyCourses />} />
               <Route path="purchases" element={<Purchases />} />
             </Route>
